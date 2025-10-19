@@ -279,125 +279,38 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# PDF EXPORT (MAP 1 + MAP 2) — FIXED PAGE FLOW
+# 📸 SCREENSHOT CAPTURE (INSTEAD OF PDF)
 # ─────────────────────────────────────────────
-if any(totals.values()):
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    w, h = A4
-    margin = 50
-    row_height = 12
+import base64
+import pyautogui
+import pyperclip
 
-    def header(title="Miracles MAP 1 & MAP 2 Report", add_logo=False):
-        """Draw header on every page."""
-        c.setFont("Helvetica-Bold", 16)
-        c.drawString(margin, h - 50, title)
-        c.setFont("Helvetica", 11)
-        c.drawString(margin, h - 70, f"Associate: {profile.get('name','')}")
-        c.drawString(margin, h - 85, f"Manager: {profile.get('manager','')}")
-        c.drawString(margin, h - 100, f"Mobile: {profile.get('mobile','')}")
-        c.drawString(margin, h - 115, f"Email: {profile.get('email','')}")
-        if add_logo:
-            # add logo if you have one: replace 'logo.png' with path
-            # c.drawImage("logo.png", w - 150, h - 120, width=100, preserveAspectRatio=True)
-            pass
+st.markdown("---")
+st.markdown("### 📸 Capture Full Page Screenshot")
 
-    def new_page(title):
-        c.showPage()
-        header(title)
+st.info("Once your associate mapping is complete, click below to capture a full-page image of the results. \
+This will include the chart, table, and recommendations — exactly as shown on screen.")
 
-    # Draw first header
-    header()
-
-    # Pie Chart
-    y = h - 360
-    if pie_img:
-        c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),
-                    w - 270, h - 380, width=200,
-                    preserveAspectRatio=True, mask='auto')
-
-    # MAP 1 Title
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin, h - 145, "MAP 1 Scores Table")
-    y = h - 170
-    c.setFont("Helvetica", 9)
-
-    # Header row
-    c.setFillColor(colors.HexColor("#1E4878"))
-    c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.drawString(margin + 5, y - 8, "Level")
-    for i, s in enumerate(SEGMENTS):
-        c.drawString(margin + 55 + 50 * i, y - 8, s[:10])
-    y -= row_height
-
-    # MAP 1 grid
-    c.setFillColor(colors.black)
-    for lvl in LEVELS:
-        if y < 100:
-            new_page("MAP 1 Scores Continued")
-            y = h - 100
-            c.setFillColor(colors.HexColor("#1E4878"))
-            c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
-            c.setFillColor(colors.white)
-            c.drawString(margin + 5, y - 8, "Level")
-            for i, s in enumerate(SEGMENTS):
-                c.drawString(margin + 55 + 50 * i, y - 8, s[:10])
-            y -= row_height
-            c.setFillColor(colors.black)
-
-        c.drawString(margin + 5, y - 8, lvl)
-        for i, s in enumerate(SEGMENTS):
-            v = scores[lvl][s] or ""
-            c.drawString(margin + 55 + 50 * i, y - 8, v)
-        y -= row_height
-
-    # Totals
-    if y < 100:
-        new_page("MAP 1 Totals")
-        y = h - 100
-    c.setFillColor(colors.HexColor("#1E4878"))
-    c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
-    c.setFillColor(colors.white)
-    c.drawString(margin + 5, y - 8, "TOTAL")
-    for i, s in enumerate(SEGMENTS):
-        c.drawString(margin + 55 + 50 * i, y - 8, str(totals[s]))
-    y -= 30
-
-    # MAP 2
-    if y < 150:
-        new_page("MAP 2 Recommendations")
-        y = h - 100
-
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin, y, "Top 3 Segments & Recommendations")
-    y -= 15
-
-    for s in top3:
-        # Color box for segment
-        r, g, b = [int(sv, 16) / 255 for sv in [
-            SEGMENT_COLORS[s][1:3], SEGMENT_COLORS[s][3:5], SEGMENT_COLORS[s][5:7]
-        ]]
-        c.setFillColorRGB(r, g, b)
-        c.rect(margin, y - 12, 120, 12, fill=1, stroke=0)
-        c.setFillColor(colors.white)
-        c.drawString(margin + 5, y - 10, s)
-        c.setFillColor(colors.black)
-        y -= 15
-
-        # Activity list
-        for a in ACTIVITIES[s]:
-            if y < 80:
-                new_page(f"MAP 2 — {s} Continued")
-                y = h - 100
-            c.drawString(margin + 20, y, f"• {a}")
-            y -= 11
-        y -= 8
-
-    c.save()
-    st.download_button(
-        "📄 Download Full Report (PDF)",
-        data=buf.getvalue(),
-        file_name=f"{current.replace(' ','_')}_MAP_Report.pdf",
-        mime="application/pdf"
-    )
+st.markdown(
+    """
+    <script>
+    function captureApp() {
+        html2canvas(document.body, {scale:2}).then(canvas => {
+            var link = document.createElement("a");
+            link.download = "Miracles_MAP_Screenshot.png";
+            link.href = canvas.toDataURL();
+            link.click();
+        });
+    }
+    </script>
+    <button onclick="captureApp()" style="
+        background-color:#1E4878;
+        color:white;
+        border:none;
+        padding:10px 20px;
+        border-radius:6px;
+        font-weight:bold;
+        cursor:pointer;">📸 Capture Screenshot</button>
+    """,
+    unsafe_allow_html=True,
+)
