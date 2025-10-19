@@ -279,68 +279,90 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# PDF EXPORT (MAP 1 + MAP 2 with auto page breaks)
+# PDF EXPORT (MAP 1 + MAP 2) — FIXED PAGE FLOW
 # ─────────────────────────────────────────────
 if any(totals.values()):
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     w, h = A4
+    margin = 50
+    row_height = 12
 
-    def new_page(title="Miracles MAP 1 & MAP 2 Report"):
-        c.showPage()
+    def header(title="Miracles MAP 1 & MAP 2 Report", add_logo=False):
+        """Draw header on every page."""
         c.setFont("Helvetica-Bold", 16)
-        c.drawString(50, h - 50, title)
+        c.drawString(margin, h - 50, title)
         c.setFont("Helvetica", 11)
-        c.drawString(50, h - 70, f"Associate: {profile.get('name','')}")
-        c.drawString(50, h - 85, f"Manager: {profile.get('manager','')}")
-        c.drawString(50, h - 100, f"Mobile: {profile.get('mobile','')}")
-        c.drawString(50, h - 115, f"Email: {profile.get('email','')}")
+        c.drawString(margin, h - 70, f"Associate: {profile.get('name','')}")
+        c.drawString(margin, h - 85, f"Manager: {profile.get('manager','')}")
+        c.drawString(margin, h - 100, f"Mobile: {profile.get('mobile','')}")
+        c.drawString(margin, h - 115, f"Email: {profile.get('email','')}")
+        if add_logo:
+            # add logo if you have one: replace 'logo.png' with path
+            # c.drawImage("logo.png", w - 150, h - 120, width=100, preserveAspectRatio=True)
+            pass
 
-    # Header + Pie
-    new_page()
+    def new_page(title):
+        c.showPage()
+        header(title)
+
+    # Draw first header
+    header()
+
+    # Pie Chart
+    y = h - 360
     if pie_img:
         c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),
-                    350, h - 330, width=200,
+                    w - 270, h - 380, width=200,
                     preserveAspectRatio=True, mask='auto')
 
+    # MAP 1 Title
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, h - 145, "MAP 1 Scores Table")
-    y = h - 160
-    row_height = 12
+    c.drawString(margin, h - 145, "MAP 1 Scores Table")
+    y = h - 170
     c.setFont("Helvetica", 9)
 
-    # header
+    # Header row
     c.setFillColor(colors.HexColor("#1E4878"))
-    c.rect(50, y - 10, 500, row_height, fill=1, stroke=0)
+    c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
     c.setFillColor(colors.white)
-    c.drawString(55, y - 8, "Level")
+    c.drawString(margin + 5, y - 8, "Level")
     for i, s in enumerate(SEGMENTS):
-        c.drawString(100 + 50 * i, y - 8, s[:10])
+        c.drawString(margin + 55 + 50 * i, y - 8, s[:10])
     y -= row_height
 
-    # rows + auto page break
+    # MAP 1 grid
     c.setFillColor(colors.black)
     for lvl in LEVELS:
         if y < 100:
             new_page("MAP 1 Scores Continued")
             y = h - 100
-        c.drawString(55, y - 8, lvl)
+            c.setFillColor(colors.HexColor("#1E4878"))
+            c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
+            c.setFillColor(colors.white)
+            c.drawString(margin + 5, y - 8, "Level")
+            for i, s in enumerate(SEGMENTS):
+                c.drawString(margin + 55 + 50 * i, y - 8, s[:10])
+            y -= row_height
+            c.setFillColor(colors.black)
+
+        c.drawString(margin + 5, y - 8, lvl)
         for i, s in enumerate(SEGMENTS):
             v = scores[lvl][s] or ""
-            c.drawString(100 + 50 * i, y - 8, v)
+            c.drawString(margin + 55 + 50 * i, y - 8, v)
         y -= row_height
 
-    # totals
+    # Totals
     if y < 100:
         new_page("MAP 1 Totals")
         y = h - 100
     c.setFillColor(colors.HexColor("#1E4878"))
-    c.rect(50, y - 10, 500, row_height, fill=1, stroke=0)
+    c.rect(margin, y - 10, 500, row_height, fill=1, stroke=0)
     c.setFillColor(colors.white)
-    c.drawString(55, y - 8, "TOTAL")
+    c.drawString(margin + 5, y - 8, "TOTAL")
     for i, s in enumerate(SEGMENTS):
-        c.drawString(100 + 50 * i, y - 8, str(totals[s]))
-    y -= 25
+        c.drawString(margin + 55 + 50 * i, y - 8, str(totals[s]))
+    y -= 30
 
     # MAP 2
     if y < 150:
@@ -348,26 +370,29 @@ if any(totals.values()):
         y = h - 100
 
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(50, y, "Top 3 Segments & Recommendations")
+    c.drawString(margin, y, "Top 3 Segments & Recommendations")
     y -= 15
 
     for s in top3:
-        r, g, b = [int(sv, 16) / 255 for sv in [SEGMENT_COLORS[s][1:3],
-                                                SEGMENT_COLORS[s][3:5],
-                                                SEGMENT_COLORS[s][5:7]]]
+        # Color box for segment
+        r, g, b = [int(sv, 16) / 255 for sv in [
+            SEGMENT_COLORS[s][1:3], SEGMENT_COLORS[s][3:5], SEGMENT_COLORS[s][5:7]
+        ]]
         c.setFillColorRGB(r, g, b)
-        c.rect(50, y - 12, 120, 12, fill=1, stroke=0)
+        c.rect(margin, y - 12, 120, 12, fill=1, stroke=0)
         c.setFillColor(colors.white)
-        c.drawString(55, y - 10, s)
+        c.drawString(margin + 5, y - 10, s)
         c.setFillColor(colors.black)
         y -= 15
+
+        # Activity list
         for a in ACTIVITIES[s]:
             if y < 80:
-                new_page(f"MAP 2 — {s} (cont.)")
+                new_page(f"MAP 2 — {s} Continued")
                 y = h - 100
-            c.drawString(70, y, f"• {a}")
+            c.drawString(margin + 20, y, f"• {a}")
             y -= 11
-        y -= 10
+        y -= 8
 
     c.save()
     st.download_button(
