@@ -44,11 +44,19 @@ LEVELS = [
     "Investment","Commitment","Support","Income","Willingness",
 ]
 DATA_PATH = Path("data_store.json")
+
+# 🎨 Brighter Colors
 SEGMENT_COLORS = {
-    "HDB": "#1E4878","Private Resale": "#C65D00","Landed": "#B5B5B5",
-    "New Launch": "#D9A600","Top Projects": "#2E6BAA",
-    "Referral": "#2F8B47","Indus/Comm": "#5B5B5B","Social Media": "#6E4A4A",
+    "HDB": "#2F80ED",          # Bright Sky Blue
+    "Private Resale": "#F2994A", # Vibrant Orange
+    "Landed": "#9B51E0",       # Purple
+    "New Launch": "#F2C94C",   # Yellow Gold
+    "Top Projects": "#56CCF2", # Light Blue
+    "Referral": "#6FCF97",     # Mint Green
+    "Indus/Comm": "#EB5757",   # Coral Red
+    "Social Media": "#BB6BD9"  # Soft Lavender
 }
+
 ACTIVITIES = {
     "HDB": [
         "HiP - Friday Business Insights","HiP - HDB Module 1 and 2",
@@ -183,8 +191,17 @@ with t2:
     totals_prev=compute_totals(scores)
     if sum(totals_prev.values())>0:
         fig,ax=plt.subplots(figsize=(4,4))
-        ax.pie([totals_prev[s] for s in SEGMENTS],labels=SEGMENTS,autopct="%1.0f%%",
-               startangle=90,colors=[SEGMENT_COLORS[s] for s in SEGMENTS])
+        wedges, texts, autotexts = ax.pie(
+            [totals_prev[s] for s in SEGMENTS],
+            labels=SEGMENTS,
+            autopct="%1.0f%%",
+            startangle=90,
+            colors=[SEGMENT_COLORS[s] for s in SEGMENTS],
+            wedgeprops={'edgecolor': 'white', 'linewidth': 2}
+        )
+        for t in autotexts:
+            t.set_color('white')
+            t.set_fontweight('bold')
         ax.axis("equal")
         st.pyplot(fig)
     else:st.caption("Totals will appear once you enter scores.")
