@@ -1,29 +1,24 @@
 import streamlit as st
-import sqlite3
 import pandas as pd
 import matplotlib.pyplot as plt
-from datetime import datetime
 import json
 
-# ---------------- PAGE CONFIG ----------------
-st.set_page_config(
-    page_title="Miracles MAP App — Scoring Style",
-    page_icon="🧭",
-    layout="wide"
-)
+# --- Page setup ---
+st.set_page_config(page_title="Miracles MAP App — Scoring Grid", page_icon="🧭", layout="wide")
 
-# ---------------- CSS ----------------
+# --- CSS Styling ---
 st.markdown("""
 <style>
 .stApp { background-color: #ffffff; }
-h1, h2, h3 { color: #222; font-weight: 700; }
 
-.grid {
+h1, h2, h3, h4 { color: #222; font-weight: 700; }
+
+.grid-table {
   display: grid;
-  grid-template-columns: 220px repeat(8, 1fr);
-  gap: 4px;
+  grid-template-columns: 200px repeat(8, 1fr);
+  gap: 2px;
   align-items: center;
-  margin-bottom: 6px;
+  margin-bottom: 5px;
 }
 
 .header {
@@ -42,22 +37,30 @@ h1, h2, h3 { color: #222; font-weight: 700; }
   text-align: left;
   padding: 6px 10px;
   border-bottom: 2px solid #b3d1ff;
+  white-space: nowrap;
 }
 
-.button-row {
+.cell {
   display: flex;
   justify-content: center;
-  gap: 4px;
+  align-items: center;
+}
+
+.btn-row {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  flex-wrap: nowrap;
 }
 
 button[data-baseweb="button"] {
   background-color: #f6f7fb !important;
   color: #333 !important;
   border: 1px solid #ccc !important;
-  border-radius: 8px !important;
-  font-size: 0.85rem !important;
-  width: 30px !important;
-  height: 30px !important;
+  border-radius: 6px !important;
+  font-size: 0.75rem !important;
+  width: 28px !important;
+  height: 28px !important;
   padding: 0 !important;
 }
 
@@ -66,10 +69,11 @@ button[data-baseweb="button"] {
   color: white !important;
   border: 1px solid #0d47a1 !important;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- DATA ----------------
+# --- Data Setup ---
 SEGMENTS = [
     "HDB", "Private Resale", "Landed", "New Launch",
     "Top Projects", "Referral", "Indus/Comm", "Social Media"
@@ -79,7 +83,7 @@ LEVELS = [
     "Investment", "Commitment", "Support", "Income", "Willingness"
 ]
 
-# ---------------- STATE ----------------
+# --- State Management ---
 def ensure_row_state(level):
     key = f"row::{level}"
     if key not in st.session_state:
@@ -104,45 +108,42 @@ def validate_row(level):
             used.add(v)
 
 def all_complete():
-    return all(all(v in range(1,9) for v in get_row(lvl).values()) for lvl in LEVELS)
+    return all(all(v in range(1, 9) for v in get_row(lvl).values()) for lvl in LEVELS)
 
-# ---------------- APP ----------------
-st.title("🧭 Miracles MAP App — MAP 1 (Scoring View)")
+# --- Title ---
+st.title("🧭 Miracles MAP App — MAP 1 (Scoring Grid)")
 st.caption("Click to assign **unique scores (1–8)** per row. Each number may only appear once per level.")
 
-# ---------------- HEADER ----------------
-st.markdown("<div class='grid'>"
-            + "<div class='header'></div>"
-            + "".join(f"<div class='header'>{seg}</div>" for seg in SEGMENTS)
-            + "</div>", unsafe_allow_html=True)
+# --- Header Row ---
+st.markdown("<div class='grid-table'>" +
+            "<div class='header'></div>" +
+            "".join(f"<div class='header'>{seg}</div>" for seg in SEGMENTS) +
+            "</div>", unsafe_allow_html=True)
 
-# ---------------- GRID ----------------
+# --- Main Scoring Grid ---
 for level in LEVELS:
     ensure_row_state(level)
-    st.markdown("<div class='grid'>", unsafe_allow_html=True)
+    st.markdown("<div class='grid-table'>", unsafe_allow_html=True)
     st.markdown(f"<div class='level'>{level}</div>", unsafe_allow_html=True)
     
-    cols = st.columns(8, gap="small")
-    for i, seg in enumerate(SEGMENTS):
-        with cols[i]:
-            current = get_row(level)[seg]
-            buttons = [1,2,3,4,5,6,7,8]
-            button_row = st.container()
-            with button_row:
-                btn_cols = st.columns(len(buttons))
-                for j, num in enumerate(buttons):
-                    with btn_cols[j]:
-                        btn_class = "selected" if current == num else ""
-                        clicked = st.button(f"{num}", key=f"{level}-{seg}-{num}", help=f"{seg} → {num}")
-                        if clicked:
-                            if num in [get_row(level)[s] for s in SEGMENTS if s != seg]:
-                                st.warning(f"⚠️ {num} already used in {level}. Must be unique.")
-                            else:
-                                set_cell(level, seg, num)
+    for seg in SEGMENTS:
+        current = get_row(level)[seg]
+        st.markdown("<div class='cell'>", unsafe_allow_html=True)
+        cols = st.columns(8)
+        for i, num in enumerate(range(1, 9)):
+            with cols[i]:
+                btn_class = "selected" if current == num else ""
+                if st.button(f"{num}", key=f"{level}-{seg}-{num}"):
+                    # Prevent duplicates in same row
+                    if num in [get_row(level)[s] for s in SEGMENTS if s != seg]:
+                        st.warning(f"⚠️ {num} already used in {level}. Must be unique.")
+                    else:
+                        set_cell(level, seg, num)
+        st.markdown("</div>", unsafe_allow_html=True)
     validate_row(level)
     st.markdown("</div>", unsafe_allow_html=True)
 
-# ---------------- TOTALS + CHART ----------------
+# --- Compute Totals ---
 values = {seg: {} for seg in SEGMENTS}
 totals = {seg: 0 for seg in SEGMENTS}
 
@@ -162,6 +163,7 @@ for i, seg in enumerate(SEGMENTS):
     with cols[i]:
         st.markdown(f"**{seg}**: {totals[seg] if totals[seg] else '—'}")
 
+# --- Pie Chart ---
 if all_complete() and sum(totals.values()) > 0:
     fig, ax = plt.subplots()
     ax.pie([totals[k] for k in SEGMENTS], labels=SEGMENTS, autopct='%1.0f%%', startangle=90)
