@@ -12,56 +12,57 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS for Sticky Header + Blue Labels ---
+# --- CSS for Sticky Header, Compact Columns & Font ---
 st.markdown("""
 <style>
 .stApp { background-color: #ffffff; }
 h1, h2, h3 { color: #222; font-weight: 700; }
 label { font-weight: 600 !important; }
 
-/* Sticky header */
+/* Sticky header bar */
 .sticky-header {
   position: sticky;
-  top: 3.5rem;
+  top: 3.3rem;
   z-index: 1000;
   background-color: #e6f0ff;
   border-bottom: 2px solid #b3d1ff;
-  padding: 10px 0;
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  text-align: center;
+  padding: 6px 0;
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
   color: #004aad;
   font-weight: 700;
-  font-size: 1.05rem;
+  text-align: center;
 }
 
-/* Grid for dropdowns */
-.score-grid {
-  display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
-  align-items: center;
+/* Ensure all 8 columns stay in one line */
+.column-wrapper {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.3rem;
+  overflow-x: auto;
+}
+.column-wrapper > div {
+  flex: 1 0 11.5%;
+  min-width: 120px;
 }
 
-/* Level labels on left */
+/* Compact dropdowns */
+div[data-baseweb="select"] {
+  font-size: 0.85rem !important;
+}
+.stSelectbox > div > div {
+  padding-top: 0.2rem !important;
+  padding-bottom: 0.2rem !important;
+}
+
+/* Left side labels (Interest, Knowledge, etc.) */
 .level-label {
   color: #004aad;
   font-weight: 700;
-  margin-top: 0.5rem;
-  margin-bottom: 0.2rem;
-}
-
-/* Responsive handling */
-@media (max-width: 1200px) {
-  .sticky-header, .score-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-}
-@media (max-width: 700px) {
-  .sticky-header, .score-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
+  font-size: 0.9rem;
+  margin-top: 0.7rem;
+  margin-bottom: 0.3rem;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -230,7 +231,7 @@ st.markdown("Each row (level) must use **all scores 1–8 exactly once** across 
 
 # --- Sticky Header ---
 st.markdown(
-    "<div class='sticky-header'>" + "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) + "</div>",
+    "<div class='sticky-header'>" + "".join([f"<div style='width:11.5%'>{seg}</div>" for seg in SEGMENTS]) + "</div>",
     unsafe_allow_html=True
 )
 
@@ -238,9 +239,9 @@ st.markdown(
 for level in LEVELS:
     ensure_row_state(level)
     st.markdown(f"<div class='level-label'>{level}</div>", unsafe_allow_html=True)
-    row_cols = st.columns(len(SEGMENTS))
-    for i, seg in enumerate(SEGMENTS):
-        with row_cols[i]:
+    with st.container():
+        st.markdown("<div class='column-wrapper'>", unsafe_allow_html=True)
+        for seg in SEGMENTS:
             options, current = available_options_for_cell(level, seg)
             opts = [None] + options
             labels = ["— Select —"] + [fmt_rank(o) for o in options]
@@ -253,6 +254,7 @@ for level in LEVELS:
                 key=f"{seg}::{level}"
             )
             set_row_selection(level, seg, opts[choice])
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- Totals Row ---
 values = {seg: {} for seg in SEGMENTS}
@@ -267,7 +269,7 @@ if all_rows_complete():
 
 st.markdown(
     "<div class='sticky-header' style='background:#004aad;color:white;border:none;'>" +
-    "".join([f"<div>Total: {totals[seg] if totals[seg] > 0 else '—'}</div>" for seg in SEGMENTS]) +
+    "".join([f"<div style='width:11.5%'>Total: {totals[seg] if totals[seg] > 0 else '—'}</div>" for seg in SEGMENTS]) +
     "</div>",
     unsafe_allow_html=True
 )
