@@ -30,8 +30,8 @@ h1, h2, h3, h4 { font-weight: 800; color: #1a1a1a; }
   padding:8px 6px; 
   font-weight:700; 
   border-radius:6px;
-  font-size:0.8rem;          /* smaller text */
-  white-space:nowrap;        /* prevent wrapping */
+  font-size:0.8rem;          
+  white-space:nowrap;        
   text-align:center;
 }
 
@@ -44,6 +44,7 @@ h1, h2, h3, h4 { font-weight: 800; color: #1a1a1a; }
   padding:6px 10px; 
   border:1px solid #cfe0ff; 
   border-radius:6px;
+  text-align:center;
 }
 
 /* input boxes */
@@ -247,24 +248,26 @@ for i, seg in enumerate(SEGMENTS, start=1):
         st.markdown(f'<div class="table-header">{seg}</div>', unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────────────────────
-# GRID INPUT (LEVELS)
+# GRID INPUT (LEVELS) — FIXED ALIGNMENT
 # ─────────────────────────────────────────────────────────────
 for lvl in LEVELS:
-    bar_cols = st.columns([1.2, 8])
-    with bar_cols[0]:
-        st.markdown(f'<div class="level-bar">{lvl}</div>', unsafe_allow_html=True)
-    with bar_cols[1]:
-        st.markdown('<div class="row-band"></div>', unsafe_allow_html=True)
-
     row_cols = st.columns([1.2] + [1] * 8)
     with row_cols[0]:
-        st.write("")
+        st.markdown(f'<div class="level-bar">{lvl}</div>', unsafe_allow_html=True)
+
     new_row_vals = {}
     for i, seg in enumerate(SEGMENTS, start=1):
         with row_cols[i]:
             key = f"cell::{current_key}::{lvl}::{seg}"
             default = scores[lvl][seg]
-            v = st.text_input(" ", value=default, key=key, label_visibility="collapsed", max_chars=1)
+            v = st.text_input(
+                " ",
+                value=default,
+                key=key,
+                label_visibility="collapsed",
+                max_chars=1,
+                placeholder=" ",
+            )
             new_row_vals[seg] = v
     scores[lvl] = validate_row_unique(new_row_vals)
 
