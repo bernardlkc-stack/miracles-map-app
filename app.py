@@ -13,12 +13,25 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Clean, neutral styling
+# Clean, neutral styling + fixed header setup
 st.markdown(
     """
     <style>
       .stApp { background: #ffffff; }
       .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
+      /* Sticky header styling */
+      div[data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlock"]:first-child {
+          position: sticky;
+          top: 3.5rem; /* Adjust if title overlaps */
+          background-color: white;
+          z-index: 999;
+          border-bottom: 2px solid #eee;
+          padding-top: 0.25rem;
+          padding-bottom: 0.25rem;
+      }
+      div[data-testid="stVerticalBlock"] > div > div > div {
+          text-align: center;
+      }
     </style>
     """,
     unsafe_allow_html=True
@@ -191,13 +204,13 @@ if selected == "— New —":
 st.subheader(f"Ranking Grid — {selected}")
 st.markdown("Each row (level) must use **all scores 1–8 exactly once** across the 8 segments.")
 
-# Header row
+# --- Fixed header row ---
 header_cols = st.columns(len(SEGMENTS), gap="small")
 for i, seg in enumerate(SEGMENTS):
     with header_cols[i]:
-        st.markdown(f"**{seg}**")
+        st.markdown(f"<div style='text-align:center; font-weight:700; color:#333;'>{seg}</div>", unsafe_allow_html=True)
 
-# Levels (rows)
+# --- Ranking Rows ---
 for level in LEVELS:
     ensure_row_state(level)
     row_cols = st.columns(len(SEGMENTS), gap="small")
@@ -205,8 +218,6 @@ for level in LEVELS:
     for i, seg in enumerate(SEGMENTS):
         with row_cols[i]:
             options, current = available_options_for_cell(level, seg)
-
-            # Add blank top option
             options_with_blank = [None] + options
             labels_with_blank = ["— Select —"] + [fmt_rank(v) for v in options]
 
@@ -226,7 +237,7 @@ for level in LEVELS:
             new_value = options_with_blank[selected_label] if options_with_blank else None
             set_row_selection(level, seg, new_value)
 
-# Calculate totals
+# --- Calculate totals ---
 values = {seg: {} for seg in SEGMENTS}
 totals = {seg: 0 for seg in SEGMENTS}
 
@@ -238,7 +249,7 @@ if all_rows_complete():
     for seg in SEGMENTS:
         totals[seg] = sum(values[seg][lvl] for lvl in LEVELS)
 
-# Totals row
+# --- Totals Row ---
 totals_cols = st.columns(len(SEGMENTS), gap="small")
 for i, seg in enumerate(SEGMENTS):
     with totals_cols[i]:
@@ -249,7 +260,7 @@ for i, seg in enumerate(SEGMENTS):
 
 st.markdown("---")
 
-# Chart and actions
+# --- Chart and Actions ---
 if all_rows_complete() and sum(totals.values()) > 0:
     labels = list(totals.keys())
     sizes = [totals[k] for k in labels]
