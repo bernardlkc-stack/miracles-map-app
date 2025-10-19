@@ -279,60 +279,100 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# PDF EXPORT (MAP 1 + MAP 2)
+# PDF EXPORT (MAP 1 + MAP 2 with auto page breaks)
 # ─────────────────────────────────────────────
 if any(totals.values()):
-    buf=BytesIO()
-    c=canvas.Canvas(buf,pagesize=A4)
-    w,h=A4
-    c.setFont("Helvetica-Bold",16)
-    c.drawString(50,h-50,"Miracles MAP 1 & MAP 2 Report")
-    c.setFont("Helvetica",11)
-    c.drawString(50,h-70,f"Associate: {profile.get('name','')}")
-    c.drawString(50,h-85,f"Manager: {profile.get('manager','')}")
-    c.drawString(50,h-100,f"Mobile: {profile.get('mobile','')}")
-    c.drawString(50,h-115,f"Email: {profile.get('email','')}")
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4)
+    w, h = A4
+
+    def new_page(title="Miracles MAP 1 & MAP 2 Report"):
+        c.showPage()
+        c.setFont("Helvetica-Bold", 16)
+        c.drawString(50, h - 50, title)
+        c.setFont("Helvetica", 11)
+        c.drawString(50, h - 70, f"Associate: {profile.get('name','')}")
+        c.drawString(50, h - 85, f"Manager: {profile.get('manager','')}")
+        c.drawString(50, h - 100, f"Mobile: {profile.get('mobile','')}")
+        c.drawString(50, h - 115, f"Email: {profile.get('email','')}")
+
+    # Header + Pie
+    new_page()
     if pie_img:
-        c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),350,h-330,width=200,preserveAspectRatio=True,mask='auto')
-    c.setFont("Helvetica-Bold",12)
-    c.drawString(50,h-145,"MAP 1 Scores Table")
-    y=h-160
-    c.setFont("Helvetica",9)
-    row_height=12
+        c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),
+                    350, h - 330, width=200,
+                    preserveAspectRatio=True, mask='auto')
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, h - 145, "MAP 1 Scores Table")
+    y = h - 160
+    row_height = 12
+    c.setFont("Helvetica", 9)
+
     # header
-    c.setFillColor(colors.HexColor("#1E4878"));c.rect(50,y-10,500,row_height,fill=1,stroke=0)
-    c.setFillColor(colors.white);c.drawString(55,y-8,"Level")
-    for i,s in enumerate(SEGMENTS):
-        c.drawString(100+50*i,y-8,s[:10])
-    y-=row_height
-    # rows
+    c.setFillColor(colors.HexColor("#1E4878"))
+    c.rect(50, y - 10, 500, row_height, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.drawString(55, y - 8, "Level")
+    for i, s in enumerate(SEGMENTS):
+        c.drawString(100 + 50 * i, y - 8, s[:10])
+    y -= row_height
+
+    # rows + auto page break
     c.setFillColor(colors.black)
     for lvl in LEVELS:
-        c.drawString(55,y-8,lvl)
-        for i,s in enumerate(SEGMENTS):
-            v=scores[lvl][s] or ""
-            c.drawString(100+50*i,y-8,v)
-        y-=row_height
+        if y < 100:
+            new_page("MAP 1 Scores Continued")
+            y = h - 100
+        c.drawString(55, y - 8, lvl)
+        for i, s in enumerate(SEGMENTS):
+            v = scores[lvl][s] or ""
+            c.drawString(100 + 50 * i, y - 8, v)
+        y -= row_height
+
     # totals
+    if y < 100:
+        new_page("MAP 1 Totals")
+        y = h - 100
     c.setFillColor(colors.HexColor("#1E4878"))
-    c.rect(50,y-10,500,row_height,fill=1,stroke=0)
-    c.setFillColor(colors.white);c.drawString(55,y-8,"TOTAL")
-    for i,s in enumerate(SEGMENTS):
-        c.drawString(100+50*i,y-8,str(totals[s]))
-    y-=25
-    c.setFont("Helvetica-Bold",12)
-    c.drawString(50,y,"Top 3 Segments & Recommendations")
-    y-=15
+    c.rect(50, y - 10, 500, row_height, fill=1, stroke=0)
+    c.setFillColor(colors.white)
+    c.drawString(55, y - 8, "TOTAL")
+    for i, s in enumerate(SEGMENTS):
+        c.drawString(100 + 50 * i, y - 8, str(totals[s]))
+    y -= 25
+
+    # MAP 2
+    if y < 150:
+        new_page("MAP 2 Recommendations")
+        y = h - 100
+
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(50, y, "Top 3 Segments & Recommendations")
+    y -= 15
+
     for s in top3:
-        r,g,b=[int(sv,16)/255 for sv in [SEGMENT_COLORS[s][1:3],SEGMENT_COLORS[s][3:5],SEGMENT_COLORS[s][5:7]]]
-        c.setFillColorRGB(r,g,b);c.rect(50,y-12,120,12,fill=1,stroke=0)
-        c.setFillColor(colors.white);c.drawString(55,y-10,s)
+        r, g, b = [int(sv, 16) / 255 for sv in [SEGMENT_COLORS[s][1:3],
+                                                SEGMENT_COLORS[s][3:5],
+                                                SEGMENT_COLORS[s][5:7]]]
+        c.setFillColorRGB(r, g, b)
+        c.rect(50, y - 12, 120, 12, fill=1, stroke=0)
+        c.setFillColor(colors.white)
+        c.drawString(55, y - 10, s)
         c.setFillColor(colors.black)
-        y-=15
-        for a in ACTIVITIES[s][:6]:
-            c.drawString(70,y,f"• {a}");y-=11
-        y-=6
+        y -= 15
+        for a in ACTIVITIES[s]:
+            if y < 80:
+                new_page(f"MAP 2 — {s} (cont.)")
+                y = h - 100
+            c.drawString(70, y, f"• {a}")
+            y -= 11
+        y -= 10
+
     c.save()
-    st.download_button("📄 Download Full Report (PDF)",
-        data=buf.getvalue(),file_name=f"{current.replace(' ','_')}_MAP_Report.pdf",
-        mime="application/pdf")
+    st.download_button(
+        "📄 Download Full Report (PDF)",
+        data=buf.getvalue(),
+        file_name=f"{current.replace(' ','_')}_MAP_Report.pdf",
+        mime="application/pdf"
+    )
