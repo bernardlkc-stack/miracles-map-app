@@ -35,7 +35,7 @@ LEVELS = [
     "Investment", "Commitment", "Support", "Income", "Willingness"
 ]
 
-RANK_OPTIONS = [8,7,6,5,4,3,2,1]  # shown with helper labels (format_func)
+RANK_OPTIONS = [8,7,6,5,4,3,2,1]
 RANK_LABELS = {
     8: "8 – Very Strong",
     7: "7 – Strong",
@@ -114,12 +114,8 @@ def history_map1(associate_name):
     c.close()
     return df
 
-# ---------------- STATE HELPERS (for unique-per-row ranking) ----------------
+# ---------------- STATE HELPERS ----------------
 def ensure_row_state(level: str):
-    """
-    Ensure we have a dict in session_state to hold selections for a given row (level),
-    mapping segment -> chosen rank (int) or None.
-    """
     key = f"row_state::{level}"
     if key not in st.session_state:
         st.session_state[key] = {seg: None for seg in SEGMENTS}
@@ -134,15 +130,10 @@ def set_row_selection(level: str, segment: str, value: int | None):
     st.session_state[key][segment] = value
 
 def available_options_for_cell(level: str, segment: str):
-    """
-    For a row, return which ranks are still available for this segment,
-    considering other segments' current choices in the same row.
-    """
     row = get_row_selections(level)
     chosen_elsewhere = {row[s] for s in SEGMENTS if s != segment and row[s] is not None}
     current_value = row[segment]
     options = [r for r in RANK_OPTIONS if r not in chosen_elsewhere]
-    # keep the current value in options to avoid dropping it on re-render
     if current_value is not None and current_value not in options:
         options = sorted(options + [current_value], reverse=True)
     return options, current_value
@@ -162,7 +153,6 @@ st.sidebar.header("Associate")
 assoc_df = list_associates()
 choices = ["— New —"] + assoc_df["name"].tolist()
 
-# If we just saved a new associate, auto-select it
 default_index = 0
 if "selected" in st.session_state and st.session_state["selected"] in choices:
     default_index = choices.index(st.session_state["selected"])
@@ -177,7 +167,7 @@ if selected == "— New —":
     if st.sidebar.button("Save Associate"):
         if name.strip():
             upsert_associate(name.strip(), mobile.strip(), email.strip(), manager.strip())
-            st.session_state["selected"] = name.strip()   # auto-select new associate
+            st.session_state["selected"] = name.strip()
             st.sidebar.success(f"Saved {name.strip()}. Loading…")
             st.rerun()
         else:
@@ -201,46 +191,42 @@ if selected == "— New —":
 st.subheader(f"Ranking Grid — {selected}")
 st.markdown("Each row (level) must use **all scores 1–8 exactly once** across the 8 segments.")
 
-# Render header row
+# Header row
 header_cols = st.columns(len(SEGMENTS), gap="small")
 for i, seg in enumerate(SEGMENTS):
     with header_cols[i]:
         st.markdown(f"**{seg}**")
 
-# Render each level row with 8 selectboxes (unique choices per row)
+# Levels (rows)
 for level in LEVELS:
-    # Ensure a state bucket for this level
     ensure_row_state(level)
-
     row_cols = st.columns(len(SEGMENTS), gap="small")
-    # First column (left gutter) shows the level name above the dropdowns
-    # We’ll show the level label only in the first cell via label arg.
 
     for i, seg in enumerate(SEGMENTS):
         with row_cols[i]:
             options, current = available_options_for_cell(level, seg)
-            # Build labels list mapped to available options
-            labels = [fmt_rank(v) for v in options]
 
-            # Decide the current index in options
-            if current in options:
-                current_index = options.index(current)
+            # Add blank top option
+            options_with_blank = [None] + options
+            labels_with_blank = ["— Select —"] + [fmt_rank(v) for v in options]
+
+            if current is None:
+                current_index = 0
             else:
-                current_index = None  # no selection yet
+                current_index = options_with_blank.index(current) if current in options_with_blank else 0
 
-            # Show dropdown (no blanks allowed ultimately, but user picks them manually)
             selected_label = st.selectbox(
                 label=level if i == 0 else " ",
-                options=list(range(len(options))),  # indices
-                index=current_index if current_index is not None else 0 if len(options) == len(RANK_OPTIONS) else 0,
-                format_func=lambda idx, _labels=labels: _labels[idx],
+                options=list(range(len(options_with_blank))),
+                index=current_index,
+                format_func=lambda idx, _labels=labels_with_blank: _labels[idx],
                 key=f"{seg}::{level}",
             )
-            # Map back to the numeric value
-            new_value = options[selected_label] if options else None
+
+            new_value = options_with_blank[selected_label] if options_with_blank else None
             set_row_selection(level, seg, new_value)
 
-# Build values & totals dicts if fully complete
+# Calculate totals
 values = {seg: {} for seg in SEGMENTS}
 totals = {seg: 0 for seg in SEGMENTS}
 
@@ -252,7 +238,7 @@ if all_rows_complete():
     for seg in SEGMENTS:
         totals[seg] = sum(values[seg][lvl] for lvl in LEVELS)
 
-# Totals row (only if complete)
+# Totals row
 totals_cols = st.columns(len(SEGMENTS), gap="small")
 for i, seg in enumerate(SEGMENTS):
     with totals_cols[i]:
@@ -263,7 +249,7 @@ for i, seg in enumerate(SEGMENTS):
 
 st.markdown("---")
 
-# Chart and actions (only when complete)
+# Chart and actions
 if all_rows_complete() and sum(totals.values()) > 0:
     labels = list(totals.keys())
     sizes = [totals[k] for k in labels]
@@ -289,7 +275,6 @@ c1, c2, c3 = st.columns([1, 1, 2])
 
 save_disabled = not all_rows_complete()
 if c1.button("💾 Save Mapping", type="primary", disabled=save_disabled):
-    # Rebuild values/totals to be extra-safe
     values = {seg: {} for seg in SEGMENTS}
     totals = {seg: 0 for seg in SEGMENTS}
     for level in LEVELS:
@@ -314,7 +299,6 @@ if c2.button("📜 View History"):
             out_rows.append(row)
         st.dataframe(pd.DataFrame(out_rows), use_container_width=True)
 
-# Exports only when complete
 if all_rows_complete():
     with c3:
         df_export = pd.DataFrame([{"Segment": k, "Total": v} for k, v in totals.items()])
