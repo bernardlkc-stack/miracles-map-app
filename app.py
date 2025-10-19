@@ -55,12 +55,98 @@ SEGMENT_COLORS = {
     "Referral": "#2F8B47","Indus/Comm": "#5B5B5B","Social Media": "#6E4A4A",
 }
 
-# abbreviated ACTIVITIES dictionary omitted here for brevity
-# paste your full ACTIVITIES mapping from previous version ↓
-ACTIVITIES = {...}  # same as before
+# ─────────────────────────────────────────────
+# ACTIVITIES
+# ─────────────────────────────────────────────
+ACTIVITIES = {
+    "HDB": [
+        "HiP - Friday Business Insights",
+        "HiP - HDB Module 1 and 2",
+        "XCEL - Mastering Timeline and Financial Calculation",
+        "XCEL - GTA Set Up",
+        "SWAT - The BIG 3 in HDB",
+        "SWAT - HDB Mastery by Strategic Flow",
+        "SWAT - How to assess your seller and get seller's listing",
+        "SWAT - RTD Advisor App",
+        "SWAT - Resale Timeline"
+    ],
+    "Private Resale": [
+        "HiP - Friday Business Insights",
+        "HiP - Huttons Analyzer Workshop",
+        "HiP - Real Insights",
+        "HiP - Comprehensive Strategies for Effective Marketing",
+        "XCEL - GTA Set Up",
+        "XCEL - Mastering Timeline and Financial Calculation",
+        "SWAT - How to assess your seller and get seller's listing",
+        "SWAT - RTD Advisor App",
+        "SWAT - Resale Timeline"
+    ],
+    "Landed": [
+        "HiP - Friday Business Insights",
+        "HiP - Monthly Tech Overview",
+        "HiP - Landed Analysis",
+        "HiP - Huttons Analyzer Workshop",
+        "XCEL - GTA Set Up",
+        "XCEL - Mastering Timeline and Financial Calculation",
+        "SWAT - Proven Methods to Win Over Landed Client",
+        "SWAT - How to assess your seller and get seller's list"
+    ],
+    "New Launch": [
+        "XCEL - New Launch: Project Swinging Techniques",
+        "XCEL - New Launch: Essence of Serving a New Launch",
+        "XCEL - Mastering Timeline and Financial Calculation",
+        "XCEL - Mastering Google Adwords",
+        "XCEL - Mastering Facebook Ads",
+        "SWAT - Facebook Marketing (Basic & Advanced)",
+        "SWAT - Learn how to create first landing page with SWAT"
+    ],
+    "Top Projects": [
+        "HiP - Friday Business Insights",
+        "HiP - Huttons Analyzer Workshop",
+        "HiP - Real Insights",
+        "XCEL - Mastering TOP Projects",
+        "XCEL - GTA Set Up",
+        "SWAT - TOP Rental and Resale",
+        "SWAT - How to assess your seller and get seller's listing",
+        "SWAT - RTD Advisor App",
+        "SWAT - Resale Timeline"
+    ],
+    "Referral": [
+        "HiP - Friday Business Insights",
+        "XCEL - CRM: Organise Your Way to Better Sales",
+        "Register ConnectPro with Bernard Lau",
+        "Create Digital Namecard",
+        "Referral System 1: Engaging Your Clients",
+        "Referral System 2: Working with Connectors",
+        "Referral System 3: Unlimited Prospecting using Digital",
+        "SWAT - Referral Based System - Zero Marketing Cost",
+        "SWAT - Absolute Script"
+    ],
+    "Indus/Comm": [
+        "HiP - Friday Business Insights",
+        "HiP - Huttons Analyzer Workshop",
+        "XCEL - Mastering Timeline and Financial Calculation",
+        "XCEL - GTA Set Up",
+        "SWAT - Commercial Expo: Giving U the Extra Edge",
+        "SWAT - RTD Advisor App",
+        "SWAT - How to assess your seller and get seller's listing",
+        "SWAT - Resale Timeline"
+    ],
+    "Social Media": [
+        "HiP - Friday Business Insights",
+        "HiP - Generate More Leads",
+        "XCEL - Power Script to Wow Your Clients",
+        "XCEL - Mastering Google Adwords",
+        "XCEL - Mastering Facebook Ads",
+        "XCEL - CRM: Organise Your Way to Better Sales",
+        "SWAT - Facebook Marketing (Basic)",
+        "SWAT - Facebook Marketing (Advanced)",
+        "SWAT - Facebook Marketing Webinar"
+    ]
+}
 
 # ─────────────────────────────────────────────
-# DATA STORAGE
+# DATA MANAGEMENT
 # ─────────────────────────────────────────────
 @st.cache_resource
 def _init_store()->dict:
@@ -116,7 +202,7 @@ if current not in STORE:
 profile=STORE[current]["profile"];scores=STORE[current]["scores"]
 
 # ─────────────────────────────────────────────
-# DETAILS + PIE
+# PROFILE + PIE
 # ─────────────────────────────────────────────
 t1,t2=st.columns([1.1,1])
 with t1:
@@ -170,7 +256,7 @@ for i,s in enumerate(SEGMENTS,start=1):
 st.markdown("---")
 
 # ─────────────────────────────────────────────
-# MAP 2 RECOMMENDATIONS
+# MAP 2 — RECOMMENDATIONS
 # ─────────────────────────────────────────────
 st.markdown("## 🎯 MAP 2 — Recommended Activities for Top 3 Segments")
 tops=sorted(totals.items(),key=lambda x:x[1],reverse=True)
@@ -193,7 +279,7 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# PDF EXPORT (WITH MAP 1 TABLE)
+# PDF EXPORT (MAP 1 + MAP 2)
 # ─────────────────────────────────────────────
 if any(totals.values()):
     buf=BytesIO()
@@ -206,12 +292,12 @@ if any(totals.values()):
     c.drawString(50,h-85,f"Manager: {profile.get('manager','')}")
     c.drawString(50,h-100,f"Mobile: {profile.get('mobile','')}")
     c.drawString(50,h-115,f"Email: {profile.get('email','')}")
-    if pie_img:c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),350,h-330,width=200,preserveAspectRatio=True,mask='auto')
+    if pie_img:
+        c.drawImage(ImageReader(BytesIO(pie_img.getvalue())),350,h-330,width=200,preserveAspectRatio=True,mask='auto')
     c.setFont("Helvetica-Bold",12)
     c.drawString(50,h-145,"MAP 1 Scores Table")
     y=h-160
     c.setFont("Helvetica",9)
-    c.setFillColor(colors.black)
     row_height=12
     # header
     c.setFillColor(colors.HexColor("#1E4878"));c.rect(50,y-10,500,row_height,fill=1,stroke=0)
@@ -219,7 +305,7 @@ if any(totals.values()):
     for i,s in enumerate(SEGMENTS):
         c.drawString(100+50*i,y-8,s[:10])
     y-=row_height
-    # data rows
+    # rows
     c.setFillColor(colors.black)
     for lvl in LEVELS:
         c.drawString(55,y-8,lvl)
