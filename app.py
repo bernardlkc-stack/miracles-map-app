@@ -279,29 +279,33 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# 📸 SCREENSHOT CAPTURE (INSTEAD OF PDF)
+# 📸 SCREENSHOT CAPTURE (CLIENT-SIDE JAVASCRIPT)
 # ─────────────────────────────────────────────
-import base64
-import pyautogui
-import pyperclip
-
 st.markdown("---")
 st.markdown("### 📸 Capture Full Page Screenshot")
 
-st.info("Once your associate mapping is complete, click below to capture a full-page image of the results. \
-This will include the chart, table, and recommendations — exactly as shown on screen.")
+st.info(
+    "Click below to download a full-page screenshot of your completed mapping. "
+    "This works best on desktop browsers (Chrome or Edge)."
+)
 
 st.markdown(
-    """
+    f"""
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <script>
-    function captureApp() {
-        html2canvas(document.body, {scale:2}).then(canvas => {
-            var link = document.createElement("a");
-            link.download = "Miracles_MAP_Screenshot.png";
+    function captureApp() {{
+        html2canvas(document.body, {{
+            scale: 2,
+            useCORS: true,
+            windowWidth: document.body.scrollWidth,
+            windowHeight: document.body.scrollHeight
+        }}).then(canvas => {{
+            const link = document.createElement("a");
+            link.download = "{current.replace(' ','_')}_MAP_Screenshot.png";
             link.href = canvas.toDataURL();
             link.click();
-        });
-    }
+        }});
+    }}
     </script>
     <button onclick="captureApp()" style="
         background-color:#1E4878;
@@ -310,7 +314,9 @@ st.markdown(
         padding:10px 20px;
         border-radius:6px;
         font-weight:bold;
-        cursor:pointer;">📸 Capture Screenshot</button>
+        cursor:pointer;">
+        📸 Capture Screenshot
+    </button>
     """,
     unsafe_allow_html=True,
 )
