@@ -4,11 +4,6 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
-from io import BytesIO
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.utils import ImageReader
-from reportlab.lib import colors
 
 # ─────────────────────────────────────────────
 # PAGE CONFIG
@@ -54,40 +49,25 @@ SEGMENT_COLORS = {
     "New Launch": "#D9A600","Top Projects": "#2E6BAA",
     "Referral": "#2F8B47","Indus/Comm": "#5B5B5B","Social Media": "#6E4A4A",
 }
-
-# ─────────────────────────────────────────────
-# ACTIVITIES
-# ─────────────────────────────────────────────
 ACTIVITIES = {
     "HDB": [
-        "HiP - Friday Business Insights",
-        "HiP - HDB Module 1 and 2",
-        "XCEL - Mastering Timeline and Financial Calculation",
-        "XCEL - GTA Set Up",
-        "SWAT - The BIG 3 in HDB",
-        "SWAT - HDB Mastery by Strategic Flow",
+        "HiP - Friday Business Insights","HiP - HDB Module 1 and 2",
+        "XCEL - Mastering Timeline and Financial Calculation","XCEL - GTA Set Up",
+        "SWAT - The BIG 3 in HDB","SWAT - HDB Mastery by Strategic Flow",
         "SWAT - How to assess your seller and get seller's listing",
-        "SWAT - RTD Advisor App",
-        "SWAT - Resale Timeline"
+        "SWAT - RTD Advisor App","SWAT - Resale Timeline"
     ],
     "Private Resale": [
-        "HiP - Friday Business Insights",
-        "HiP - Huttons Analyzer Workshop",
-        "HiP - Real Insights",
-        "HiP - Comprehensive Strategies for Effective Marketing",
-        "XCEL - GTA Set Up",
-        "XCEL - Mastering Timeline and Financial Calculation",
+        "HiP - Friday Business Insights","HiP - Huttons Analyzer Workshop",
+        "HiP - Real Insights","HiP - Comprehensive Strategies for Effective Marketing",
+        "XCEL - GTA Set Up","XCEL - Mastering Timeline and Financial Calculation",
         "SWAT - How to assess your seller and get seller's listing",
-        "SWAT - RTD Advisor App",
-        "SWAT - Resale Timeline"
+        "SWAT - RTD Advisor App","SWAT - Resale Timeline"
     ],
     "Landed": [
-        "HiP - Friday Business Insights",
-        "HiP - Monthly Tech Overview",
-        "HiP - Landed Analysis",
-        "HiP - Huttons Analyzer Workshop",
-        "XCEL - GTA Set Up",
-        "XCEL - Mastering Timeline and Financial Calculation",
+        "HiP - Friday Business Insights","HiP - Monthly Tech Overview",
+        "HiP - Landed Analysis","HiP - Huttons Analyzer Workshop",
+        "XCEL - GTA Set Up","XCEL - Mastering Timeline and Financial Calculation",
         "SWAT - Proven Methods to Win Over Landed Client",
         "SWAT - How to assess your seller and get seller's list"
     ],
@@ -95,52 +75,36 @@ ACTIVITIES = {
         "XCEL - New Launch: Project Swinging Techniques",
         "XCEL - New Launch: Essence of Serving a New Launch",
         "XCEL - Mastering Timeline and Financial Calculation",
-        "XCEL - Mastering Google Adwords",
-        "XCEL - Mastering Facebook Ads",
+        "XCEL - Mastering Google Adwords","XCEL - Mastering Facebook Ads",
         "SWAT - Facebook Marketing (Basic & Advanced)",
         "SWAT - Learn how to create first landing page with SWAT"
     ],
     "Top Projects": [
-        "HiP - Friday Business Insights",
-        "HiP - Huttons Analyzer Workshop",
-        "HiP - Real Insights",
-        "XCEL - Mastering TOP Projects",
-        "XCEL - GTA Set Up",
-        "SWAT - TOP Rental and Resale",
+        "HiP - Friday Business Insights","HiP - Huttons Analyzer Workshop",
+        "HiP - Real Insights","XCEL - Mastering TOP Projects",
+        "XCEL - GTA Set Up","SWAT - TOP Rental and Resale",
         "SWAT - How to assess your seller and get seller's listing",
-        "SWAT - RTD Advisor App",
-        "SWAT - Resale Timeline"
+        "SWAT - RTD Advisor App","SWAT - Resale Timeline"
     ],
     "Referral": [
-        "HiP - Friday Business Insights",
-        "XCEL - CRM: Organise Your Way to Better Sales",
-        "Register ConnectPro with Bernard Lau",
-        "Create Digital Namecard",
+        "HiP - Friday Business Insights","XCEL - CRM: Organise Your Way to Better Sales",
+        "Register ConnectPro with Bernard Lau","Create Digital Namecard",
         "Referral System 1: Engaging Your Clients",
         "Referral System 2: Working with Connectors",
         "Referral System 3: Unlimited Prospecting using Digital",
-        "SWAT - Referral Based System - Zero Marketing Cost",
-        "SWAT - Absolute Script"
+        "SWAT - Referral Based System - Zero Marketing Cost","SWAT - Absolute Script"
     ],
     "Indus/Comm": [
-        "HiP - Friday Business Insights",
-        "HiP - Huttons Analyzer Workshop",
-        "XCEL - Mastering Timeline and Financial Calculation",
-        "XCEL - GTA Set Up",
-        "SWAT - Commercial Expo: Giving U the Extra Edge",
-        "SWAT - RTD Advisor App",
-        "SWAT - How to assess your seller and get seller's listing",
-        "SWAT - Resale Timeline"
+        "HiP - Friday Business Insights","HiP - Huttons Analyzer Workshop",
+        "XCEL - Mastering Timeline and Financial Calculation","XCEL - GTA Set Up",
+        "SWAT - Commercial Expo: Giving U the Extra Edge","SWAT - RTD Advisor App",
+        "SWAT - How to assess your seller and get seller's listing","SWAT - Resale Timeline"
     ],
     "Social Media": [
-        "HiP - Friday Business Insights",
-        "HiP - Generate More Leads",
-        "XCEL - Power Script to Wow Your Clients",
-        "XCEL - Mastering Google Adwords",
-        "XCEL - Mastering Facebook Ads",
-        "XCEL - CRM: Organise Your Way to Better Sales",
-        "SWAT - Facebook Marketing (Basic)",
-        "SWAT - Facebook Marketing (Advanced)",
+        "HiP - Friday Business Insights","HiP - Generate More Leads",
+        "XCEL - Power Script to Wow Your Clients","XCEL - Mastering Google Adwords",
+        "XCEL - Mastering Facebook Ads","XCEL - CRM: Organise Your Way to Better Sales",
+        "SWAT - Facebook Marketing (Basic)","SWAT - Facebook Marketing (Advanced)",
         "SWAT - Facebook Marketing Webinar"
     ]
 }
@@ -217,13 +181,11 @@ with t1:
 with t2:
     st.subheader("FOCUS SEGMENTATION")
     totals_prev=compute_totals(scores)
-    pie_img=None
     if sum(totals_prev.values())>0:
         fig,ax=plt.subplots(figsize=(4,4))
         ax.pie([totals_prev[s] for s in SEGMENTS],labels=SEGMENTS,autopct="%1.0f%%",
                startangle=90,colors=[SEGMENT_COLORS[s] for s in SEGMENTS])
         ax.axis("equal")
-        pie_img=BytesIO();plt.savefig(pie_img,format="png",bbox_inches="tight")
         st.pyplot(fig)
     else:st.caption("Totals will appear once you enter scores.")
 st.markdown("---")
@@ -279,44 +241,11 @@ else:
                 </table></div>""",unsafe_allow_html=True)
 
 # ─────────────────────────────────────────────
-# 📸 SCREENSHOT CAPTURE (CLIENT-SIDE JAVASCRIPT)
+# SAVE BUTTON
 # ─────────────────────────────────────────────
 st.markdown("---")
-st.markdown("### 📸 Capture Full Page Screenshot")
-
-st.info(
-    "Click below to download a full-page screenshot of your completed mapping. "
-    "This works best on desktop browsers (Chrome or Edge)."
-)
-
-st.markdown(
-    f"""
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script>
-    function captureApp() {{
-        html2canvas(document.body, {{
-            scale: 2,
-            useCORS: true,
-            windowWidth: document.body.scrollWidth,
-            windowHeight: document.body.scrollHeight
-        }}).then(canvas => {{
-            const link = document.createElement("a");
-            link.download = "{current.replace(' ','_')}_MAP_Screenshot.png";
-            link.href = canvas.toDataURL();
-            link.click();
-        }});
-    }}
-    </script>
-    <button onclick="captureApp()" style="
-        background-color:#1E4878;
-        color:white;
-        border:none;
-        padding:10px 20px;
-        border-radius:6px;
-        font-weight:bold;
-        cursor:pointer;">
-        📸 Capture Screenshot
-    </button>
-    """,
-    unsafe_allow_html=True,
-)
+if st.button("💾 Save / Update"):
+    STORE[current]["profile"]=profile
+    STORE[current]["scores"]=scores
+    save_store(STORE)
+    st.success("Saved successfully.")
