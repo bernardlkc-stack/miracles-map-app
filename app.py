@@ -12,44 +12,61 @@ st.set_page_config(
     layout="wide"
 )
 
-# --- CSS for clean layout ---
+# --- CSS for Sticky Header + Blue Labels ---
 st.markdown("""
 <style>
-.stApp { background-color: #fff; }
+.stApp { background-color: #ffffff; }
 h1, h2, h3 { color: #222; font-weight: 700; }
 label { font-weight: 600 !important; }
-.header-grid {
+
+/* Sticky header */
+.sticky-header {
+  position: sticky;
+  top: 3.5rem;
+  z-index: 1000;
+  background-color: #e6f0ff;
+  border-bottom: 2px solid #b3d1ff;
+  padding: 10px 0;
   display: grid;
   grid-template-columns: repeat(8, 1fr);
   text-align: center;
-  background-color: #f8f9fa;
-  border-bottom: 2px solid #ddd;
-  padding: 10px 0;
+  color: #004aad;
   font-weight: 700;
+  font-size: 1.05rem;
 }
+
+/* Grid for dropdowns */
 .score-grid {
   display: grid;
   grid-template-columns: repeat(8, 1fr);
-  gap: 0.5rem;
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
   align-items: center;
 }
-.dropdown-row {
-  margin-bottom: 0.75rem;
+
+/* Level labels on left */
+.level-label {
+  color: #004aad;
+  font-weight: 700;
+  margin-top: 0.5rem;
+  margin-bottom: 0.2rem;
 }
+
+/* Responsive handling */
 @media (max-width: 1200px) {
-  .header-grid, .score-grid {
+  .sticky-header, .score-grid {
     grid-template-columns: repeat(4, 1fr);
   }
 }
 @media (max-width: 700px) {
-  .header-grid, .score-grid {
+  .sticky-header, .score-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 }
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- DB SETUP ----------------
+# ---------------- DATABASE ----------------
 DB = "map.db"
 SEGMENTS = [
     "HDB", "Private Resale", "Landed", "New Launch",
@@ -137,7 +154,7 @@ def history_map1(associate_name):
     c.close()
     return df
 
-# --- STATE HELPERS ---
+# ---------------- STATE ----------------
 def ensure_row_state(level: str):
     key = f"row_state::{level}"
     if key not in st.session_state:
@@ -162,14 +179,14 @@ def available_options_for_cell(level: str, segment: str):
 def all_rows_complete():
     return all(all(val in RANK_OPTIONS for val in get_row_selections(level).values()) for level in LEVELS)
 
-# --- INIT ---
+# ---------------- INIT ----------------
 init_db()
 
-# ---------------- HEADER SECTION ----------------
+# ---------------- HEADER ----------------
 st.title("🧭 Miracles MAP App — MAP 1 (Ranking by Level)")
-st.caption("Assign **unique ranks 1–8** for each row. Totals are summed across 9 levels to identify segment focus.")
+st.caption("Assign **unique ranks 1–8** per row. Totals identify strongest business segments.")
 
-# --- Associate Info at Top ---
+# --- Associate Info ---
 assoc_df = list_associates()
 choices = ["— New —"] + assoc_df["name"].tolist()
 
@@ -203,7 +220,7 @@ else:
 
 st.divider()
 
-# ---------------- MAIN GRID ----------------
+# ---------------- GRID ----------------
 if selected == "— New —":
     st.info("➡️ Please save or select an associate to begin.")
     st.stop()
@@ -211,19 +228,19 @@ if selected == "— New —":
 st.subheader(f"Ranking Grid — {selected}")
 st.markdown("Each row (level) must use **all scores 1–8 exactly once** across 8 segments.")
 
-# --- Header Row ---
+# --- Sticky Header ---
 st.markdown(
-    "<div class='header-grid'>" + "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) + "</div>",
+    "<div class='sticky-header'>" + "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) + "</div>",
     unsafe_allow_html=True
 )
 
 # --- Dropdown Rows ---
 for level in LEVELS:
     ensure_row_state(level)
-    st.markdown(f"**{level}**", unsafe_allow_html=True)
-    cols = st.columns(len(SEGMENTS))
+    st.markdown(f"<div class='level-label'>{level}</div>", unsafe_allow_html=True)
+    row_cols = st.columns(len(SEGMENTS))
     for i, seg in enumerate(SEGMENTS):
-        with cols[i]:
+        with row_cols[i]:
             options, current = available_options_for_cell(level, seg)
             opts = [None] + options
             labels = ["— Select —"] + [fmt_rank(o) for o in options]
@@ -237,7 +254,7 @@ for level in LEVELS:
             )
             set_row_selection(level, seg, opts[choice])
 
-# --- Totals ---
+# --- Totals Row ---
 values = {seg: {} for seg in SEGMENTS}
 totals = {seg: 0 for seg in SEGMENTS}
 if all_rows_complete():
@@ -248,15 +265,12 @@ if all_rows_complete():
     for seg in SEGMENTS:
         totals[seg] = sum(values[seg][lvl] for lvl in LEVELS)
 
-# --- Totals Row ---
 st.markdown(
-    "<div class='header-grid'>" +
+    "<div class='sticky-header' style='background:#004aad;color:white;border:none;'>" +
     "".join([f"<div>Total: {totals[seg] if totals[seg] > 0 else '—'}</div>" for seg in SEGMENTS]) +
     "</div>",
     unsafe_allow_html=True
 )
-
-st.divider()
 
 # --- Chart ---
 if all_rows_complete():
@@ -267,7 +281,7 @@ if all_rows_complete():
     ax.axis('equal')
     st.pyplot(fig)
 else:
-    st.warning("Complete all 9 rows before totals and chart appear.")
+    st.warning("Complete all rows before totals and chart appear.")
 
 # --- Save / Export ---
 colA, colB, colC = st.columns([1, 1, 2])
