@@ -9,43 +9,48 @@ import json
 st.set_page_config(
     page_title="Miracles MAP App (MAP 1)",
     page_icon="🧭",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="wide"
 )
 
-# Clean, neutral styling + fixed header setup
-st.markdown(
-    """
-    <style>
-      .stApp { background: #ffffff; }
-      .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
-      /* Custom fixed header bar */
-      .sticky-header {
-          position: fixed;
-          top: 4.5rem;
-          left: 3.5rem;
-          right: 3.5rem;
-          z-index: 999;
-          background-color: white;
-          border-bottom: 2px solid #eee;
-          padding: 6px 0;
-          display: grid;
-          grid-template-columns: repeat(8, 1fr);
-          text-align: center;
-          font-weight: 700;
-          color: #333;
-      }
-      /* Space below header to prevent overlap */
-      .spacer {
-          height: 50px;
-      }
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# --- CSS for clean layout ---
+st.markdown("""
+<style>
+.stApp { background-color: #fff; }
+h1, h2, h3 { color: #222; font-weight: 700; }
+label { font-weight: 600 !important; }
+.header-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  text-align: center;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #ddd;
+  padding: 10px 0;
+  font-weight: 700;
+}
+.score-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+}
+.dropdown-row {
+  margin-bottom: 0.75rem;
+}
+@media (max-width: 1200px) {
+  .header-grid, .score-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+@media (max-width: 700px) {
+  .header-grid, .score-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+</style>
+""", unsafe_allow_html=True)
 
+# ---------------- DB SETUP ----------------
 DB = "map.db"
-
 SEGMENTS = [
     "HDB", "Private Resale", "Landed", "New Launch",
     "Top Projects", "Referral", "Indus/Comm", "Social Media"
@@ -54,7 +59,6 @@ LEVELS = [
     "Interest", "Knowledge", "Confidence", "Market",
     "Investment", "Commitment", "Support", "Income", "Willingness"
 ]
-
 RANK_OPTIONS = [8,7,6,5,4,3,2,1]
 RANK_LABELS = {
     8: "8 – Very Strong",
@@ -70,7 +74,6 @@ RANK_LABELS = {
 def fmt_rank(x: int) -> str:
     return RANK_LABELS.get(x, str(x))
 
-# ---------------- DB HELPERS ----------------
 def conn():
     return sqlite3.connect(DB, check_same_thread=False)
 
@@ -134,7 +137,7 @@ def history_map1(associate_name):
     c.close()
     return df
 
-# ---------------- STATE HELPERS ----------------
+# --- STATE HELPERS ---
 def ensure_row_state(level: str):
     key = f"row_state::{level}"
     if key not in st.session_state:
@@ -142,12 +145,10 @@ def ensure_row_state(level: str):
     return key
 
 def get_row_selections(level: str) -> dict:
-    key = ensure_row_state(level)
-    return st.session_state[key]
+    return st.session_state[ensure_row_state(level)]
 
 def set_row_selection(level: str, segment: str, value: int | None):
-    key = ensure_row_state(level)
-    st.session_state[key][segment] = value
+    st.session_state[ensure_row_state(level)][segment] = value
 
 def available_options_for_cell(level: str, segment: str):
     row = get_row_selections(level)
@@ -158,98 +159,87 @@ def available_options_for_cell(level: str, segment: str):
         options = sorted(options + [current_value], reverse=True)
     return options, current_value
 
-def row_complete(level: str) -> bool:
-    row = get_row_selections(level)
-    return all(val in RANK_OPTIONS for val in row.values())
+def all_rows_complete():
+    return all(all(val in RANK_OPTIONS for val in get_row_selections(level).values()) for level in LEVELS)
 
-def all_rows_complete() -> bool:
-    return all(row_complete(level) for level in LEVELS)
-
-# ---------------- INIT ----------------
+# --- INIT ---
 init_db()
 
-# ---------------- SIDEBAR ----------------
-st.sidebar.header("Associate")
+# ---------------- HEADER SECTION ----------------
+st.title("🧭 Miracles MAP App — MAP 1 (Ranking by Level)")
+st.caption("Assign **unique ranks 1–8** for each row. Totals are summed across 9 levels to identify segment focus.")
+
+# --- Associate Info at Top ---
 assoc_df = list_associates()
 choices = ["— New —"] + assoc_df["name"].tolist()
 
-default_index = 0
-if "selected" in st.session_state and st.session_state["selected"] in choices:
-    default_index = choices.index(st.session_state["selected"])
-
-selected = st.sidebar.selectbox("Select associate", choices, index=default_index)
+col1, col2, col3, col4 = st.columns(4)
+with col1:
+    selected = st.selectbox("Select Associate", choices)
 
 if selected == "— New —":
-    name = st.sidebar.text_input("Name*")
-    mobile = st.sidebar.text_input("Mobile")
-    email = st.sidebar.text_input("Email")
-    manager = st.sidebar.text_input("Manager", value="Bernard Lau")
-    if st.sidebar.button("Save Associate"):
-        if name.strip():
-            upsert_associate(name.strip(), mobile.strip(), email.strip(), manager.strip())
-            st.session_state["selected"] = name.strip()
-            st.sidebar.success(f"Saved {name.strip()}. Loading…")
-            st.rerun()
-        else:
-            st.sidebar.error("Name is required.")
+    with st.container():
+        name = st.text_input("Name*")
+        mobile = st.text_input("Mobile")
+        email = st.text_input("Email")
+        manager = st.text_input("Manager", value="Bernard Lau")
+        if st.button("Save Associate"):
+            if name.strip():
+                upsert_associate(name.strip(), mobile.strip(), email.strip(), manager.strip())
+                st.session_state["selected"] = name.strip()
+                st.success(f"✅ Saved {name.strip()}. Refreshing…")
+                st.rerun()
+            else:
+                st.error("Please enter a name.")
 else:
     rec = assoc_df[assoc_df["name"] == selected].iloc[0]
-    st.sidebar.write(f"**Mobile:** {rec['mobile'] or '-'}")
-    st.sidebar.write(f"**Email:** {rec['email'] or '-'}")
-    st.sidebar.write(f"**Manager:** {rec['manager'] or '-'}")
-    if st.sidebar.button("Refresh"):
-        st.rerun()
+    st.markdown(
+        f"""
+        **Mobile:** {rec['mobile'] or '-'}  
+        **Email:** {rec['email'] or '-'}  
+        **Manager:** {rec['manager'] or '-'}
+        """
+    )
 
-# ---------------- MAIN UI ----------------
-st.title("🧭 Miracles MAP App — MAP 1 (Ranking by Level)")
-st.caption("Assign **unique ranks 1–8** in every row. Totals are the sum of ranks across the 9 levels; the chart reflects the segment focus by total score.")
+st.divider()
 
+# ---------------- MAIN GRID ----------------
 if selected == "— New —":
-    st.info("➡️ Add or select an associate from the sidebar to start.")
+    st.info("➡️ Please save or select an associate to begin.")
     st.stop()
 
 st.subheader(f"Ranking Grid — {selected}")
-st.markdown("Each row (level) must use **all scores 1–8 exactly once** across the 8 segments.")
+st.markdown("Each row (level) must use **all scores 1–8 exactly once** across 8 segments.")
 
-# --- Fixed header bar ---
+# --- Header Row ---
 st.markdown(
-    "<div class='sticky-header'>" +
-    "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) +
-    "</div><div class='spacer'></div>",
+    "<div class='header-grid'>" + "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) + "</div>",
     unsafe_allow_html=True
 )
 
-# --- Ranking Rows ---
+# --- Dropdown Rows ---
 for level in LEVELS:
     ensure_row_state(level)
-    row_cols = st.columns(len(SEGMENTS), gap="small")
-
+    st.markdown(f"**{level}**", unsafe_allow_html=True)
+    cols = st.columns(len(SEGMENTS))
     for i, seg in enumerate(SEGMENTS):
-        with row_cols[i]:
+        with cols[i]:
             options, current = available_options_for_cell(level, seg)
-            options_with_blank = [None] + options
-            labels_with_blank = ["— Select —"] + [fmt_rank(v) for v in options]
-
-            if current is None:
-                current_index = 0
-            else:
-                current_index = options_with_blank.index(current) if current in options_with_blank else 0
-
-            selected_label = st.selectbox(
-                label=level if i == 0 else " ",
-                options=list(range(len(options_with_blank))),
-                index=current_index,
-                format_func=lambda idx, _labels=labels_with_blank: _labels[idx],
-                key=f"{seg}::{level}",
+            opts = [None] + options
+            labels = ["— Select —"] + [fmt_rank(o) for o in options]
+            idx = opts.index(current) if current in opts else 0
+            choice = st.selectbox(
+                label=" ",
+                options=list(range(len(opts))),
+                index=idx,
+                format_func=lambda i, _l=labels: _l[i],
+                key=f"{seg}::{level}"
             )
+            set_row_selection(level, seg, opts[choice])
 
-            new_value = options_with_blank[selected_label] if options_with_blank else None
-            set_row_selection(level, seg, new_value)
-
-# --- Calculate totals ---
+# --- Totals ---
 values = {seg: {} for seg in SEGMENTS}
 totals = {seg: 0 for seg in SEGMENTS}
-
 if all_rows_complete():
     for level in LEVELS:
         row = get_row_selections(level)
@@ -259,18 +249,17 @@ if all_rows_complete():
         totals[seg] = sum(values[seg][lvl] for lvl in LEVELS)
 
 # --- Totals Row ---
-totals_cols = st.columns(len(SEGMENTS), gap="small")
-for i, seg in enumerate(SEGMENTS):
-    with totals_cols[i]:
-        if all_rows_complete():
-            st.markdown(f"**Total: {totals[seg]}**")
-        else:
-            st.markdown("**Total: —**")
+st.markdown(
+    "<div class='header-grid'>" +
+    "".join([f"<div>Total: {totals[seg] if totals[seg] > 0 else '—'}</div>" for seg in SEGMENTS]) +
+    "</div>",
+    unsafe_allow_html=True
+)
 
-st.markdown("---")
+st.divider()
 
-# --- Chart and Actions ---
-if all_rows_complete() and sum(totals.values()) > 0:
+# --- Chart ---
+if all_rows_complete():
     labels = list(totals.keys())
     sizes = [totals[k] for k in labels]
     fig, ax = plt.subplots()
@@ -278,59 +267,28 @@ if all_rows_complete() and sum(totals.values()) > 0:
     ax.axis('equal')
     st.pyplot(fig)
 else:
-    st.warning("Complete **all rows** with unique ranks 1–8 before totals and chart are shown.")
+    st.warning("Complete all 9 rows before totals and chart appear.")
 
-with st.expander("Instructions", expanded=True):
-    st.markdown("""
-1️⃣ In each **row (level)**, assign **unique ranks 1–8** across the 8 segments.  
-2️⃣ Each number 1–8 can be used **once per row only** (no duplicates).  
-3️⃣ When **all rows are complete**, the **totals** and **chart** will appear.  
-4️⃣ Totals are the **sum of ranks (1–8)** over the 9 levels.  
-5️⃣ Aim to complete within 10 minutes in the presence of a District Head.
-""")
-
-st.markdown("---")
-
-c1, c2, c3 = st.columns([1, 1, 2])
-
-save_disabled = not all_rows_complete()
-if c1.button("💾 Save Mapping", type="primary", disabled=save_disabled):
-    values = {seg: {} for seg in SEGMENTS}
-    totals = {seg: 0 for seg in SEGMENTS}
-    for level in LEVELS:
-        row = get_row_selections(level)
-        for seg, val in row.items():
-            values[seg][level] = int(val)
-    for seg in SEGMENTS:
-        totals[seg] = sum(values[seg][lvl] for lvl in LEVELS)
+# --- Save / Export ---
+colA, colB, colC = st.columns([1, 1, 2])
+if colA.button("💾 Save Mapping", type="primary", disabled=not all_rows_complete()):
     save_map1(selected, values, totals)
-    st.success(f"Mapping for {selected} saved!")
+    st.success(f"Saved mapping for {selected} ✅")
     st.balloons()
 
-if c2.button("📜 View History"):
+if colB.button("📜 View History"):
     df = history_map1(selected)
     if df.empty:
-        st.info("No history yet.")
+        st.info("No history found.")
     else:
-        out_rows = []
-        for _, r in df.iterrows():
-            t = json.loads(r["totals_json"])
-            row = {"created_at": r["created_at"], **t}
-            out_rows.append(row)
-        st.dataframe(pd.DataFrame(out_rows), use_container_width=True)
+        st.dataframe(df[["created_at", "totals_json"]], use_container_width=True)
 
 if all_rows_complete():
-    with c3:
+    with colC:
         df_export = pd.DataFrame([{"Segment": k, "Total": v} for k, v in totals.items()])
         st.download_button(
-            "⬇️ Export current totals (CSV)",
+            "⬇️ Export Totals (CSV)",
             data=df_export.to_csv(index=False).encode("utf-8"),
-            file_name=f"{selected.replace(' ','_')}_map1_totals.csv",
+            file_name=f"{selected.replace(' ','_')}_map_totals.csv",
             mime="text/csv"
-        )
-        st.download_button(
-            "⬇️ Export current mapping (JSON)",
-            data=json.dumps(values, indent=2).encode("utf-8"),
-            file_name=f"{selected.replace(' ','_')}_map1_values.json",
-            mime="application/json"
         )
