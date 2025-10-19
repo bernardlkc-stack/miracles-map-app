@@ -19,18 +19,25 @@ st.markdown(
     <style>
       .stApp { background: #ffffff; }
       .block-container { padding-top: 1.5rem; padding-bottom: 2rem; }
-      /* Sticky header styling */
-      div[data-testid="stHorizontalBlock"] div[data-testid="stVerticalBlock"]:first-child {
-          position: sticky;
-          top: 3.5rem; /* Adjust if title overlaps */
-          background-color: white;
+      /* Custom fixed header bar */
+      .sticky-header {
+          position: fixed;
+          top: 4.5rem;
+          left: 3.5rem;
+          right: 3.5rem;
           z-index: 999;
+          background-color: white;
           border-bottom: 2px solid #eee;
-          padding-top: 0.25rem;
-          padding-bottom: 0.25rem;
-      }
-      div[data-testid="stVerticalBlock"] > div > div > div {
+          padding: 6px 0;
+          display: grid;
+          grid-template-columns: repeat(8, 1fr);
           text-align: center;
+          font-weight: 700;
+          color: #333;
+      }
+      /* Space below header to prevent overlap */
+      .spacer {
+          height: 50px;
       }
     </style>
     """,
@@ -204,11 +211,13 @@ if selected == "— New —":
 st.subheader(f"Ranking Grid — {selected}")
 st.markdown("Each row (level) must use **all scores 1–8 exactly once** across the 8 segments.")
 
-# --- Fixed header row ---
-header_cols = st.columns(len(SEGMENTS), gap="small")
-for i, seg in enumerate(SEGMENTS):
-    with header_cols[i]:
-        st.markdown(f"<div style='text-align:center; font-weight:700; color:#333;'>{seg}</div>", unsafe_allow_html=True)
+# --- Fixed header bar ---
+st.markdown(
+    "<div class='sticky-header'>" +
+    "".join([f"<div>{seg}</div>" for seg in SEGMENTS]) +
+    "</div><div class='spacer'></div>",
+    unsafe_allow_html=True
+)
 
 # --- Ranking Rows ---
 for level in LEVELS:
